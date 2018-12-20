@@ -76,7 +76,8 @@
             let talkWords = $("#talkwords");
             let talkSubmit = $("#talksub");
             // webSocket
-            let wsURL = "ws://chat.niu12.com/webSocket";
+            // let wsURL = "ws://chat.niu12.com/webSocket";
+            let wsURL = "ws://127.0.0.1:8889/webSocket";
             ws = new WebSocket(wsURL);
             try {
                 // 监听连接服务器

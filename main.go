@@ -3,8 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gomodule/redigo/redis"
 	"golang.org/x/net/websocket"
+	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -17,20 +20,11 @@ type User struct {
 	Username string
 }
 
-type Datas struct {
-	Messages []Message
-	Users    []User
-}
-
 // 全局信息
-var datas Datas
 var users map[*websocket.Conn]string
 
 func main() {
-	fmt.Println("启动时间: ", time.Now())
-
 	// 初始化数据
-	datas = Datas{}
 	users = make(map[*websocket.Conn]string)
 
 	// 渲染页面
@@ -48,32 +42,51 @@ func index(w http.ResponseWriter, r *http.Request)  {
 }
 
 func webSocket(ws *websocket.Conn)  {
+	// 连接redis
+	c, err := redis.Dial("tcp", "127.0.0.1:6379")
+	if err != nil{
+		panic("redis连接失败" + err.Error())
+		return
+	}
+	defer c.Close()
+	// 选取1号数据库 blog为0号数据库
+	if _, err := c.Do("SELECT", 1); err != nil {
+		panic("redis数据库选择失败" + err.Error())
+		return
+	}
+	fmt.Println(string(ws))
+	return
 	var message Message
 	var data string
 	for {
 		// 接收数据
-		err := websocket.Message.Receive(ws, &data)
-		if err != nil {
-			// 移除出错的连接
-			delete(users, ws)
-			fmt.Println("连接异常")
-			break
-		}
+		errReceive := websocket.Message.Receive(ws, &data)
 		// 解析信息
 		err = json.Unmarshal([]byte(data), &message)
 		if err != nil {
 			fmt.Println("解析数据异常")
 		}
-
-		// 添加新用户到map中,已经存在的用户不必添加
-		if _, ok := users[ws]; !ok {
-			users[ws] = message.Username
-			// 添加用户到全局信息
-			datas.Users = append(datas.Users, User{Username:message.Username})
+		if errReceive != nil {
+			// 删除用户
+			res, err := c.Do("SREM", "users", message.Username)
+			if err != nil {
+				panic("删除用户异常"+err.Error())
+			}
+			fmt.Println(res)
+			break
 		}
-		// 添加聊天记录到全局信息
-		datas.Messages = append(datas.Messages, message)
+		// 将用户放到集合users当中
+		_, err :=c.Do("SADD", "users", message.Username)
+		if err != nil {
+			panic("添加用户异常" + err.Error())
+		}
 
+		// 将用户每个人的消息存储到对应的集合message
+		value := "username:" + message.Username+
+					"-time:" + time.Now().Format("2006-1-2-15:04:05") +
+					"-rand:" + strconv.Itoa(rand.Intn(1000))+
+					"-message:" + message.Message
+		c.Do("SADD", "message", value)
 
 		// 通过webSocket将当前信息分发
 		for key := range users{
