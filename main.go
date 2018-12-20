@@ -88,6 +88,8 @@ func webSocket(ws *websocket.Conn)  {
 		if err != nil {
 			// 移除出错的连接
 			delete(users, ws)
+			// 删除redis用户集合
+			c.Do("SREM","users", message.Username)
 			fmt.Println("连接异常")
 			break
 		}
@@ -120,13 +122,15 @@ func webSocket(ws *websocket.Conn)  {
 			panic("保存记录异常" + err.Error())
 			return
 		}
-
+		
 		// 通过webSocket将当前信息分发
 		for key := range users{
 			err := websocket.Message.Send(key, data)
 			if err != nil{
 				// 移除出错的连接
 				delete(users, key)
+				// 删除redis用户集合
+				c.Do("SREM","users", message.Username)
 				fmt.Println("发送出错: " + err.Error())
 				break
 			}

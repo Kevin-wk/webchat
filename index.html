@@ -545,7 +545,7 @@
             <div class="title"><p>群聊</p></div>
             <div class="message">
                 <ul class="messae-content">
-                    
+
                 </ul>
             </div>
         </div><!--v-component--> <!--v-start-->
@@ -581,6 +581,7 @@
             // 监听信息
             ws.onmessage = function (result) {
                 let data = JSON.parse(result.data);
+                console.log(data);
                 // 如果是本人,放在右边 不是本人 放在左边
                 var className = "msg";
                 if (data.username === username){
