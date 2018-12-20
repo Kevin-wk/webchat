@@ -54,31 +54,27 @@ func webSocket(ws *websocket.Conn)  {
 		panic("redis数据库选择失败" + err.Error())
 		return
 	}
-	fmt.Println(string(ws))
-	return
+
 	var message Message
 	var data string
 	for {
 		// 接收数据
-		errReceive := websocket.Message.Receive(ws, &data)
+		err := websocket.Message.Receive(ws, &data)
+		if err != nil {
+			// 移除出错的连接
+			delete(users, ws)
+			fmt.Println("连接异常")
+			break
+		}
 		// 解析信息
 		err = json.Unmarshal([]byte(data), &message)
 		if err != nil {
 			fmt.Println("解析数据异常")
 		}
-		if errReceive != nil {
-			// 删除用户
-			res, err := c.Do("SREM", "users", message.Username)
-			if err != nil {
-				panic("删除用户异常"+err.Error())
-			}
-			fmt.Println(res)
-			break
-		}
-		// 将用户放到集合users当中
-		_, err :=c.Do("SADD", "users", message.Username)
-		if err != nil {
-			panic("添加用户异常" + err.Error())
+
+		// 添加新用户到map中,已经存在的用户不必添加
+		if _, ok := users[ws]; !ok {
+			users[ws] = message.Username
 		}
 
 		// 将用户每个人的消息存储到对应的集合message
@@ -86,7 +82,11 @@ func webSocket(ws *websocket.Conn)  {
 					"-time:" + time.Now().Format("2006-1-2-15:04:05") +
 					"-rand:" + strconv.Itoa(rand.Intn(1000))+
 					"-message:" + message.Message
-		c.Do("SADD", "message", value)
+		_,	err =c.Do("SADD", "message", value)
+		if err != nil{
+			panic("保存记录异常" + err.Error())
+			return
+		}
 
 		// 通过webSocket将当前信息分发
 		for key := range users{
