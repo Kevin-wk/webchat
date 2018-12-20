@@ -107,99 +107,6 @@
 
     </style>
     <script src="//cdn.bootcss.com/jquery/1.11.3/jquery.min.js"></script>
-    <script type="text/javascript">
-        $(function () {
-            // 询问框获取用户昵称
-            let username = localStorage.getItem("username") ? localStorage.getItem("username") : disp_prompt();
-            let words = $("#words");
-            let talkWords = $("#talkwords");
-            let talkSubmit = $("#talksub");
-            // webSocket
-            // let wsURL = "ws://chat.niu12.com/webSocket";
-            let wsURL = "ws://127.0.0.1:8889/webSocket";
-            ws = new WebSocket(wsURL);
-            try {
-                // 监听连接服务器
-                ws.onopen = function () {
-                    console.log("已连接服务器")
-                };
-
-                // 监听关闭服务器
-                ws.onclose = function () {
-                    if (ws) {
-                        ws.close();
-                        ws = null
-                    }
-                    console.log("关闭服务器连接")
-                };
-
-                // 监听信息
-                ws.onmessage = function (result) {
-                    let data = JSON.parse(result.data);
-                    let className = "atalk";
-                    let user = data.username
-                    // 如果是本人,放在右边 不是本人 放在左边
-                    if (data.username === username) {
-                        className = "btalk";
-                        user = "";
-                    }
-                    str = words.html() + '<div class="' + className + '">' + user + '<span>' + data.message + '</span></div>';
-                    words.html(str);
-                    var scrollHeight = words.prop("scrollHeight");
-                    words.scrollTop(scrollHeight);
-                };
-
-                // 监听错误
-                ws.onerror = function () {
-                    if (ws) {
-                        ws.close();
-                        ws = null;
-                    }
-                    console.log("服务器连接失败")
-                }
-            } catch (e) {
-                console.log(e.message)
-            }
-
-            document.onkeydown = function (event) {
-                let e = event || window.event;
-                if (e && e.keyCode === 13) { //回车键的键值为13
-                    talkSubmit.click()
-                }
-            };
-
-            talkSubmit.click(function () {
-                // 获取输入框内容
-                let content = talkWords.val();
-                if (content === "") {
-                    // 消息为空时弹窗
-                    alert("消息不能为空");
-                    return;
-                }
-
-                // 发送数据
-                if (ws == null) {
-                    alert("连接服务器失败,请刷新页面");
-                    window.location.reload();
-                    return
-                }
-                let request = {"username": username, "message": content};
-                ws.send(JSON.stringify(request));
-                // 清空输入框
-                talkWords.val("")
-            })
-        });
-
-        function disp_prompt() {
-            let username = prompt("请输入昵称");
-            if (username == null || username === "") {
-                disp_prompt()
-            } else {
-                localStorage.setItem("username", username);
-                return username;
-            }
-        }
-    </script>
 </head>
 <style>
     *{
@@ -543,32 +450,7 @@
 .notice p {
     text-align: center
 }
-
-.success {
-    color: #3c763d;
-    background: #dff0d8;
-    box-shadow: 0 0 10px #46b855
-}
-
-.warning {
-    color: #8a6d3b;
-    background: #fcf8e3;
-    box-shadow: 0 0 10px rgba(129, 148, 95, .71)
-}
-
-.error {
-    color: #a94442;
-    background: #f2dede;
-    box-shadow: 0 0 10px #f77b6f
-}
-
-.fade-enter-active, .fade-leave-active {
-    transition: opacity .5s
-}
-
-.fade-enter, .fade-leave-active {
-    opacity: 0
-}</style>
+</style>
 <style type="text/css">#app {
     width: 800px;
     height: 600px;
@@ -632,7 +514,8 @@
     background: #46b855;
     display: inline;
     border-radius: 3px
-}</style>
+}
+</style>
 
 <body>
 <!-- <app></app> -->
@@ -640,26 +523,29 @@
     <div class="slide-bar">
         <div class="card">
             <div class="header"><img class="avatar"
-                                     src="http://tva3.sinaimg.cn/crop.0.0.200.200.50/701cac0cjw8ez3nd2wa7rj205k05kt8v.jpg">
-                <p class="name">jack </p>
+                                     src="">
+                <p class="name">匿名</p>
                 <div class="dot dot-red"></div>
             </div>
-            <div class="search"><input type="text" placeholder="Search"></div>
+            <div class="search"><input type="text" placeholder="当前在线人员"></div>
         </div><!--v-component-->
         <div class="list">
-            <ul> <!--v-for-start-->
-                <li id="0"><img src="http://58pic.ooopic.com/58pic/12/25/04/02k58PICVwf.jpg">
-                    <p>群聊 <span>(0)</span><!--v-if--></p>
-                    <div></div>
-                </li><!--v-for-end--> </ul>
-        </div><!--v-component--> </div>
+            <ul>
+                {{range .}}
+                    <li id="0">
+                        <p>{{.}}</p>
+                    </li>
+                {{end}}
+            </ul>
+        </div>
+    </div>
     <div class="main">
         <transition name="fade"> <!--v-if--> </transition><!--v-component-->
         <div class="content">
             <div class="title"><p>群聊</p></div>
             <div class="message">
                 <ul class="messae-content">
-
+                    
                 </ul>
             </div>
         </div><!--v-component--> <!--v-start-->
@@ -673,11 +559,11 @@
     $(function () {
         // 询问框获取用户昵称
         let username = localStorage.getItem("username") ? localStorage.getItem("username") : disp_prompt();
-     /*   let words = $("#words");
-        let talkWords = $("#talkwords");
-        let talkSubmit = $("#talksub");*/
-        // webSocket
-        let wsURL = "ws://chat.niu12.com/webSocket";
+        var avatar = localStorage.getItem("avatar");
+        $(".avatar").attr("src", avatar);
+        // 设置用户名
+        $(".name").html(username);
+        let wsURL = "ws://127.0.0.1:8889/webSocket";
         ws = new WebSocket(wsURL);
         try {
             // 监听连接服务器
@@ -695,26 +581,20 @@
             // 监听信息
             ws.onmessage = function (result) {
                 let data = JSON.parse(result.data);
-                let user = data.username
                 // 如果是本人,放在右边 不是本人 放在左边
+                var className = "msg";
                 if (data.username === username){
-                    var messageItem = `<li>
-                        <p>${new Date().getTime()}</p>
-                        <div class="msg self">
-                            <img src="assets/timg.jpg" alt="jack">
-                            <div class="text">${data.message}</div>
-                        </div>
-                    </li>`
-                } else {
-                    var messageItem = `<li>
-                        <p>${new Date().getTime()}</p>
-                        <div class="msg">
-                            <img src="assets/timg3.jpg" alt="jack">
-                            <div class="text">${data.message}</div>
-                        </div>
-                    </li>`
+                    className = "msg self";
                 }
-
+                var oDate = new Date(); //实例一个时间对象；
+                var time = oDate.getFullYear() + "-" + (oDate.getMonth()+1) + "-" + oDate.getDate() + " " + oDate.getHours() + ":" + oDate.getMinutes() + ":" + oDate.getSeconds();
+                var messageItem = `<li>
+                        <p>`+time+`</p>
+                        <div class="`+className+`">
+                            <img src="` + avatar + `" alt="`+username+`">
+                            <div class="text">${data.message}</div>
+                        </div>
+                    </li>`;
                 $('.messae-content').append($(messageItem));
             };
             // 监听错误
@@ -756,6 +636,9 @@
     });
 
     function disp_prompt() {
+        // 生成随机头像
+        var avatar = "http://www.niu12.com/storage/avatar/0"+Math.floor(Math.random()*9 + 1)+".jpg";
+        localStorage.setItem("avatar", avatar);
         let username = prompt("请输入昵称");
         if (username == null || username === "") {
             disp_prompt()

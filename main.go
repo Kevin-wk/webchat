@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gomodule/redigo/redis"
 	"golang.org/x/net/websocket"
+	"html/template"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -38,7 +39,31 @@ func main() {
 }
 
 func index(w http.ResponseWriter, r *http.Request)  {
-	http.ServeFile(w, r, "index.html")
+	// 连接redis
+	c, err := redis.Dial("tcp", "127.0.0.1:6379")
+	if err != nil{
+		panic("redis连接失败" + err.Error())
+		return
+	}
+	defer c.Close()
+	// 选取1号数据库 blog为0号数据库
+	if _, err := c.Do("SELECT", 1); err != nil {
+		panic("redis数据库选择失败" + err.Error())
+		return
+	}
+
+	// 查出所有用户
+	res, err := redis.ByteSlices(c.Do("SMEMBERS", "users"))
+	if err != nil{
+		panic(err)
+		return
+	}
+	user := make([]string,0)
+	for _,v := range res{
+		user = append(user, string(v))
+	}
+	t,_ := template.ParseFiles("index.html")
+	t.Execute(w, user)
 }
 
 func webSocket(ws *websocket.Conn)  {
@@ -76,7 +101,15 @@ func webSocket(ws *websocket.Conn)  {
 		if _, ok := users[ws]; !ok {
 			users[ws] = message.Username
 		}
-
+		// redis数据库添加用户
+		userExist, _ := redis.Bool(c.Do("SISMEMBER", "users", message.Username))
+		if !userExist {
+			_, err := c.Do("SADD", "users", message.Username)
+			if err != nil {
+				panic("redis添加数据出错: " + err.Error())
+				return
+			}
+		}
 		// 将用户每个人的消息存储到对应的集合message
 		value := "username:" + message.Username+
 					"-time:" + time.Now().Format("2006-1-2-15:04:05") +
