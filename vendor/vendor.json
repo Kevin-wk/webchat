@@ -3,6 +3,12 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "DDCfsVdrJ2mqjFgeCxypbqb68oQ=",
+			"path": "github.com/gomodule/redigo/redis",
+			"revision": "02dc2736dbc3a4a56907b0d5a9fead2f71b499db",
+			"revisionTime": "2018-12-13T21:05:01Z"
+		},
+		{
 			"checksumSHA1": "F+tqxPGFt5x7DKZakbbMmENX1oQ=",
 			"path": "golang.org/x/net/websocket",
 			"revision": "351d144fa1fc0bd934e2408202be0c29f25e35a0",

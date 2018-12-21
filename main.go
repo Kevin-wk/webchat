@@ -8,7 +8,9 @@ import (
 	"html/template"
 	"math/rand"
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -29,8 +31,13 @@ type RespData struct {
 
 // 全局信息
 var users map[*websocket.Conn]string
+var redisAddress = []string{"tcp", "127.0.0.1:6379"}
 
 func main() {
+	// 根据不同环境选择redis连接方式
+	if os.Getenv("REDIS_PORT") != "" {
+		redisAddress = strings.Split("tcp://172.17.0.4:6379", "://")
+	}
 	// 初始化数据
 	users = make(map[*websocket.Conn]string)
 
@@ -46,7 +53,7 @@ func main() {
 
 func index(w http.ResponseWriter, r *http.Request)  {
 	// 连接redis
-	c, err := redis.Dial("tcp", "127.0.0.1:6379")
+	c, err := redis.Dial(redisAddress[0], redisAddress[1])
 	if err != nil{
 		panic("redis连接失败" + err.Error())
 		return
@@ -74,7 +81,7 @@ func index(w http.ResponseWriter, r *http.Request)  {
 
 func webSocket(ws *websocket.Conn)  {
 	// 连接redis
-	c, err := redis.Dial("tcp", "127.0.0.1:6379")
+	c, err := redis.Dial(redisAddress[0], redisAddress[1])
 	if err != nil{
 		panic("redis连接失败" + err.Error())
 		return
