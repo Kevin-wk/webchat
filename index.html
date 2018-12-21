@@ -532,7 +532,7 @@
         <div class="list">
             <ul>
                 {{range .}}
-                    <li id="0">
+                    <li>
                         <p>{{.}}</p>
                     </li>
                 {{end}}
@@ -581,7 +581,14 @@
             // 监听信息
             ws.onmessage = function (result) {
                 let data = JSON.parse(result.data);
-                console.log(data);
+
+                // 更新用户列表
+                var userList = "<ul>";
+                for (var i in data.users) {
+                    userList += "<li><p>"+data.users[i]+"</p></li>";
+                }
+                userList += "</ul>";
+                $(".list").html(userList);
                 // 如果是本人,放在右边 不是本人 放在左边
                 var className = "msg";
                 if (data.username === username){
@@ -597,6 +604,8 @@
                         </div>
                     </li>`;
                 $('.messae-content').append($(messageItem));
+                let scrollHeight = $('.message').prop("scrollHeight");
+                $('.message').scrollTop(scrollHeight);
             };
             // 监听错误
             ws.onerror = function () {
@@ -632,7 +641,7 @@
             let request = {"username":username, "message":content};
             ws.send(JSON.stringify(request));
             // 清空输入框
-            $('#user-message').val("")
+            $('#user-message').val("");
         })
     });
 

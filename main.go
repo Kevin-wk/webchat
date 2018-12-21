@@ -13,13 +13,19 @@ import (
 )
 
 type Message struct {
-	Username string
-	Message  string
+	Username string `json:"username"`
+	Message  string `json:"message"`
 }
 
 type User struct {
 	Username string
 }
+
+type RespData struct {
+	Message
+	Users []string `json:"users"`
+}
+
 
 // 全局信息
 var users map[*websocket.Conn]string
@@ -124,8 +130,15 @@ func webSocket(ws *websocket.Conn)  {
 		}
 		
 		// 通过webSocket将当前信息分发
+		var respData RespData
+		json.Unmarshal([]byte(data), &respData)
+		res, _ := redis.ByteSlices(c.Do("SMEMBERS", "users"))
+		for _, v := range res{
+			respData.Users = append(respData.Users, string(v))
+		}
+		data,_ := json.Marshal(respData)
 		for key := range users{
-			err := websocket.Message.Send(key, data)
+			err := websocket.Message.Send(key, string(data))
 			if err != nil{
 				// 移除出错的连接
 				delete(users, key)
