@@ -32,11 +32,25 @@ type RespData struct {
 // 全局信息
 var users map[*websocket.Conn]string
 var redisAddress = []string{"tcp", "127.0.0.1:6379"}
-
+var c redis.Conn
 func main() {
-	// 根据不同环境选择redis连接方式
-	if os.Getenv("REDIS_PORT") != "" {
-		redisAddress = strings.Split("tcp://172.17.0.4:6379", "://")
+	var err error
+	if c == nil {
+		// 根据不同环境选择redis连接方式
+		if os.Getenv("REDIS_PORT") != "" {
+			redisAddress = strings.Split(os.Getenv("REDIS_PORT"), "://")
+		}
+		// 连接redis
+		c, err = redis.Dial(redisAddress[0], redisAddress[1])
+		if err != nil{
+			panic("redis连接失败" + err.Error())
+			return
+		}
+		// 选取1号数据库 blog为0号数据库
+		if _, err = c.Do("SELECT", 1); err != nil {
+			panic("redis数据库选择失败" + err.Error())
+			return
+		}
 	}
 	// 初始化数据
 	users = make(map[*websocket.Conn]string)
@@ -52,19 +66,6 @@ func main() {
 }
 
 func index(w http.ResponseWriter, r *http.Request)  {
-	// 连接redis
-	c, err := redis.Dial(redisAddress[0], redisAddress[1])
-	if err != nil{
-		panic("redis连接失败" + err.Error())
-		return
-	}
-	defer c.Close()
-	// 选取1号数据库 blog为0号数据库
-	if _, err := c.Do("SELECT", 1); err != nil {
-		panic("redis数据库选择失败" + err.Error())
-		return
-	}
-
 	// 查出所有用户
 	res, err := redis.ByteSlices(c.Do("SMEMBERS", "users"))
 	if err != nil{
@@ -80,19 +81,6 @@ func index(w http.ResponseWriter, r *http.Request)  {
 }
 
 func webSocket(ws *websocket.Conn)  {
-	// 连接redis
-	c, err := redis.Dial(redisAddress[0], redisAddress[1])
-	if err != nil{
-		panic("redis连接失败" + err.Error())
-		return
-	}
-	defer c.Close()
-	// 选取1号数据库 blog为0号数据库
-	if _, err := c.Do("SELECT", 1); err != nil {
-		panic("redis数据库选择失败" + err.Error())
-		return
-	}
-
 	var message Message
 	var data string
 	for {
