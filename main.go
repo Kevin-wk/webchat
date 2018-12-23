@@ -33,7 +33,8 @@ type RespData struct {
 var users map[*websocket.Conn]string
 var redisAddress = []string{"tcp", "127.0.0.1:6379"}
 var c redis.Conn
-func main() {
+
+func init()  {
 	var err error
 	if c == nil {
 		// 根据不同环境选择redis连接方式
@@ -52,6 +53,9 @@ func main() {
 			return
 		}
 	}
+}
+
+func main() {
 	// 初始化数据
 	users = make(map[*websocket.Conn]string)
 
@@ -87,7 +91,6 @@ func webSocket(ws *websocket.Conn)  {
 		// 接收数据
 		err := websocket.Message.Receive(ws, &data)
 		if err != nil {
-			fmt.Println(err)
 			// 移除出错的连接
 			delete(users, ws)
 			// 删除redis用户集合
