@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -34,6 +35,9 @@ type RespData struct {
 var users map[*websocket.Conn]string
 var redisAddress = []string{"tcp", "127.0.0.1:6379"}
 var c redis.Conn
+
+// 增加并发锁
+var lock sync.Mutex
 
 func init()  {
 	var err error
@@ -111,23 +115,35 @@ func webSocket(ws *websocket.Conn)  {
 		// redis数据库添加用户
 		userExist, _ := redis.Bool(c.Do("SISMEMBER", "users", message.Username))
 		if !userExist {
+			lock.Lock()
+			/*
+			此时便会出现错误：use of closed network connection
+
+			错误原因：hmset对redis进行写操作时，只能对一个hash表有一个写操作，不能同时多个写操作。
+
+			解决办法：
+
+				   在执行hmset命令之前加锁，执行完之后解锁即可。本例解决方案如下：
+			*/
 			_, err := c.Do("SADD", "users", message.Username)
 			if err != nil {
 				panic("redis添加数据出错: " + err.Error())
 				return
 			}
+			lock.Unlock()
 		}
 		// 将用户每个人的消息存储到对应的集合message
 		value := "username:" + message.Username+
 					"-time:" + time.Now().Format("2006-1-2-15:04:05") +
 					"-rand:" + strconv.Itoa(rand.Intn(1000))+
 					"-message:" + message.Message
+		lock.Lock()
 		_,	err =c.Do("SADD", "message", value)
 		if err != nil{
 			panic("保存记录异常" + err.Error())
 			return
 		}
-		
+		lock.Unlock()
 		// 通过webSocket将当前信息分发
 		var respData RespData
 		json.Unmarshal([]byte(data), &respData)
