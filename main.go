@@ -134,7 +134,7 @@ func webSocket(ws *websocket.Conn)  {
 		for _, v := range res{
 			respData.Users = append(respData.Users, string(v))
 		}
-		respData.Message.Message = xss_handle(respData.Message.Message)
+		respData.Message.Message = xssHandle(respData.Message.Message)
 		data,_ := json.Marshal(respData)
 		for key := range users{
 			err := websocket.Message.Send(key, string(data))
@@ -150,6 +150,6 @@ func webSocket(ws *websocket.Conn)  {
 	}
 }
 
-func xss_handle(s string) string {
+func xssHandle(s string) string {
 	return template.HTMLEscapeString(s)
 }
