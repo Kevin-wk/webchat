@@ -87,11 +87,11 @@ func webSocket(ws *websocket.Conn)  {
 		// 接收数据
 		err := websocket.Message.Receive(ws, &data)
 		if err != nil {
+			fmt.Println(err)
 			// 移除出错的连接
 			delete(users, ws)
 			// 删除redis用户集合
 			c.Do("SREM","users", message.Username)
-			fmt.Println("连接异常")
 			break
 		}
 		// 解析信息
@@ -131,6 +131,7 @@ func webSocket(ws *websocket.Conn)  {
 		for _, v := range res{
 			respData.Users = append(respData.Users, string(v))
 		}
+		respData.Message.Message = xss_handle(respData.Message.Message)
 		data,_ := json.Marshal(respData)
 		for key := range users{
 			err := websocket.Message.Send(key, string(data))
@@ -144,4 +145,8 @@ func webSocket(ws *websocket.Conn)  {
 			}
 		}
 	}
+}
+
+func xss_handle(s string) string {
+	return template.HTMLEscapeString(s)
 }
