@@ -25,6 +25,7 @@ type User struct {
 
 type RespData struct {
 	Message
+	Avatar string `json:"avatar"`
 	Users []string `json:"users"`
 }
 

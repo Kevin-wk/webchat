@@ -581,7 +581,6 @@
             // 监听信息
             ws.onmessage = function (result) {
                 let data = JSON.parse(result.data);
-
                 // 更新用户列表
                 var userList = "<ul>";
                 for (var i in data.users) {
@@ -599,7 +598,7 @@
                 var messageItem = `<li>
                         <p>`+time+`</p>
                         <div class="`+className+`">
-                            <img src="` + avatar + `" alt="`+username+`">
+                            <img src="` + data.avatar + `" alt="`+data.username+`">
                             <div class="text">${data.message}</div>
                         </div>
                     </li>`;
@@ -638,7 +637,7 @@
                 window.location.reload();
                 return
             }
-            let request = {"username":username, "message":content};
+            let request = {"username":username, "message":content, "avatar":localStorage.getItem("avatar")};
             ws.send(JSON.stringify(request));
             // 清空输入框
             $('#user-message').val("");
