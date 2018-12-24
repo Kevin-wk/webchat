@@ -116,15 +116,6 @@ func webSocket(ws *websocket.Conn)  {
 		userExist, _ := redis.Bool(c.Do("SISMEMBER", "users", message.Username))
 		if !userExist {
 			lock.Lock()
-			/*
-			此时便会出现错误：use of closed network connection
-
-			错误原因：hmset对redis进行写操作时，只能对一个hash表有一个写操作，不能同时多个写操作。
-
-			解决办法：
-
-				   在执行hmset命令之前加锁，执行完之后解锁即可。本例解决方案如下：
-			*/
 			_, err := c.Do("SADD", "users", message.Username)
 			if err != nil {
 				panic("redis添加数据出错: " + err.Error())
